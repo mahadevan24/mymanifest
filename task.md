@@ -1,0 +1,23 @@
+- [x] Initialize Next.js Project (Next.js 14/15, Tailwind, TS, App Router, src dir)
+- [x] Install Lucide Icons & Canvas Confetti
+- [x] Implement Database Abstraction & Fallbacks
+  - [x] DB Service Interface (`src/lib/db.ts`)
+  - [x] Local IndexedDB Database service (`src/lib/indexeddb-db.ts`)
+  - [x] Firebase Config & Database service (`src/lib/firebase.ts`)
+  - [x] DB Adapter Loader with automatic fallback / configuration checks
+- [x] Develop Styling and Theme Configurations
+  - [x] Tailwind Config updates & custom colors (Configured via `@theme` in globals.css for Tailwind v4)
+  - [x] Global CSS with dark styles, scrollbars, neon highlights, and gradients (`src/app/globals.css`)
+- [x] Create Navigation & Settings Components
+  - [x] Global Nav Header with dynamic Firebase connectivity info (`src/components/navbar.tsx`)
+- [x] Implement Landing Page (Category Grid)
+  - [x] Landing Page UI (`src/app/page.tsx`)
+  - [x] Create Board modal dialog with modern glass styling
+- [x] Implement Board Details Page (Image Grid & Upload)
+  - [x] Category Dynamic Page (`src/app/category/[id]/page.tsx`)
+  - [x] Multiple File Upload Overlay and drag-and-drop handler
+  - [x] Grid of Images with deletion button overlay
+  - [x] Fullscreen Lightbox component with slider navigation
+- [/] Build & Verify
+  - [/] Verify clean compiles (`npm run build`)
+  - [ ] Create Walkthrough artifact with verification results
