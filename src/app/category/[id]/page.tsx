@@ -8,6 +8,15 @@ import UploadModal from "@/components/ui/upload-modal";
 import Lightbox from "@/components/ui/lightbox";
 import CustomDialog from "@/components/ui/custom-dialog";
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function CategoryDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -113,7 +122,7 @@ export default function CategoryDetailPage() {
         setCategory(currentCat);
 
         const boardImages = await dbInstance.getImages(categoryId);
-        setImages(boardImages);
+        setImages(shuffleArray(boardImages));
       } catch (error) {
         console.error("Failed to load board details:", error);
       } finally {
@@ -154,7 +163,7 @@ export default function CategoryDetailPage() {
       setIsUploadDone(true);
 
       const refreshedImages = await db.getImages(category.id);
-      setImages(refreshedImages);
+      setImages(shuffleArray(refreshedImages));
 
       if (!category.coverImageUrl && uploaded.length > 0) {
         setCategory({

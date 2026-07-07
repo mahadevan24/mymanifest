@@ -1,13 +1,40 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FolderHeart } from "lucide-react";
-import { Category } from "@/lib/db";
+import { Category, getDB } from "@/lib/db";
 
 interface CategoryCardProps {
   category: Category;
 }
 
 export default function CategoryCard({ category }: CategoryCardProps) {
-  const hasCover = !!category.coverImageUrl;
+  const [coverUrl, setCoverUrl] = useState<string | undefined>(
+    category.coverImageUrl
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function pickRandomImage() {
+      try {
+        const db = await getDB();
+        const images = await db.getImages(category.id);
+        if (!cancelled && images.length > 0) {
+          const randomIndex = Math.floor(Math.random() * images.length);
+          setCoverUrl(images[randomIndex].url);
+        }
+      } catch {
+        // silently fall back to coverImageUrl
+      }
+    }
+    pickRandomImage();
+    return () => {
+      cancelled = true;
+    };
+  }, [category.id]);
+
+  const hasCover = !!coverUrl;
 
   return (
     <Link
@@ -17,7 +44,7 @@ export default function CategoryCard({ category }: CategoryCardProps) {
       {/* Background Image / Placeholder */}
       {hasCover ? (
         <img
-          src={category.coverImageUrl}
+          src={coverUrl}
           alt={`${category.name} vision board`}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           loading="lazy"
