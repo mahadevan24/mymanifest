@@ -12,7 +12,7 @@ export default function CategoryCard({ category }: CategoryCardProps) {
   return (
     <Link
       href={`/category/${category.id}`}
-      className="group relative block aspect-[4/5] sm:aspect-[16/10] md:aspect-[4/5] lg:aspect-[3/4] w-full rounded-xl overflow-hidden border border-neutral-900 hover:border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.06)] transition-all duration-500 cursor-pointer"
+      className="group relative block h-full min-h-48 w-full rounded-xl overflow-hidden border border-neutral-900 hover:border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.06)] transition-all duration-500 cursor-pointer"
     >
       {/* Background Image / Placeholder */}
       {hasCover ? (

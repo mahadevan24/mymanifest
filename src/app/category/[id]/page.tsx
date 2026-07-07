@@ -6,6 +6,7 @@ import { ArrowLeft, Trash2, Upload, Loader2, Image as ImageIcon } from "lucide-r
 import { getDB, Category, VisionImage, DBService } from "@/lib/db";
 import UploadModal from "@/components/ui/upload-modal";
 import Lightbox from "@/components/ui/lightbox";
+import CustomDialog from "@/components/ui/custom-dialog";
 
 export default function CategoryDetailPage() {
   const params = useParams();
@@ -30,6 +31,69 @@ export default function CategoryDetailPage() {
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean;
+    type: "alert" | "confirm";
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
+    variant?: "info" | "warning" | "danger";
+  }>({
+    isOpen: false,
+    type: "alert",
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
+  const showAlert = (title: string, message: string, variant: "info" | "warning" | "danger" = "info") => {
+    return new Promise<void>((resolve) => {
+      setDialogConfig({
+        isOpen: true,
+        type: "alert",
+        title,
+        message,
+        confirmLabel: "UNDERSTOOD",
+        variant,
+        onConfirm: () => {
+          setDialogConfig((prev) => ({ ...prev, isOpen: false }));
+          resolve();
+        },
+      });
+    });
+  };
+
+  const showConfirm = (
+    title: string,
+    message: string,
+    variant: "info" | "warning" | "danger" = "info",
+    confirmLabel = "CONTINUE",
+    cancelLabel = "CANCEL"
+  ) => {
+    return new Promise<boolean>((resolve) => {
+      setDialogConfig({
+        isOpen: true,
+        type: "confirm",
+        title,
+        message,
+        confirmLabel,
+        cancelLabel,
+        variant,
+        onConfirm: () => {
+          setDialogConfig((prev) => ({ ...prev, isOpen: false }));
+          resolve(true);
+        },
+        onCancel: () => {
+          setDialogConfig((prev) => ({ ...prev, isOpen: false }));
+          resolve(false);
+        },
+      });
+    });
+  };
 
   useEffect(() => {
     async function loadBoardData() {
@@ -68,7 +132,7 @@ export default function CategoryDetailPage() {
     );
 
     if (filesArray.length === 0) {
-      alert("Please select valid image files!");
+      await showAlert("Invalid Files", "Please select valid image files!", "warning");
       return;
     }
 
@@ -100,7 +164,7 @@ export default function CategoryDetailPage() {
       }
     } catch (error) {
       console.error("Image upload failed:", error);
-      alert("Something went wrong during image upload!");
+      await showAlert("Upload Failed", "Something went wrong during image upload. Please try again.", "danger");
       setIsUploading(false);
     }
   };
@@ -138,7 +202,14 @@ export default function CategoryDetailPage() {
     e.stopPropagation();
 
     if (!db || !category) return;
-    if (!confirm("Are you sure you want to remove this image from your vision board?")) return;
+    const confirmed = await showConfirm(
+      "Remove Image",
+      "Are you sure you want to remove this image from your vision board?",
+      "warning",
+      "REMOVE",
+      "CANCEL"
+    );
+    if (!confirmed) return;
 
     try {
       const previousImages = [...images];
@@ -158,7 +229,7 @@ export default function CategoryDetailPage() {
       }
     } catch (error) {
       console.error("Failed to delete image:", error);
-      alert("Failed to delete the image.");
+      await showAlert("Action Failed", "Failed to delete the image. Please try again.", "danger");
       const refreshedImages = await db.getImages(category.id);
       setImages(refreshedImages);
     }
@@ -166,13 +237,14 @@ export default function CategoryDetailPage() {
 
   const handleDeleteBoard = async () => {
     if (!db || !category) return;
-    if (
-      !confirm(
-        `CAUTION: Are you sure you want to delete the "${category.name}" vision board? This will permanently delete the board and all ${images.length} images stored within it!`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await showConfirm(
+      "Delete Vision Board",
+      `CAUTION: Are you sure you want to delete the "${category.name}" vision board? This will permanently delete the board and all ${images.length} images stored within it!`,
+      "danger",
+      "DELETE BOARD",
+      "CANCEL"
+    );
+    if (!confirmed) return;
 
     setIsDeletingBoard(true);
     try {
@@ -180,7 +252,7 @@ export default function CategoryDetailPage() {
       router.push("/");
     } catch (error) {
       console.error("Failed to delete category:", error);
-      alert("Failed to delete board.");
+      await showAlert("Delete Failed", "Failed to delete the board. Please try again.", "danger");
       setIsDeletingBoard(false);
     }
   };
@@ -238,7 +310,7 @@ export default function CategoryDetailPage() {
       )}
 
       {/* Navigation Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10 pb-6 border-b border-neutral-900">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 pb-4 border-b border-neutral-900">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/")}
@@ -248,7 +320,7 @@ export default function CategoryDetailPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="font-display font-black text-3xl sm:text-4xl tracking-widest text-white uppercase text-glow-mono">
+            <h1 className="font-display font-black text-2xl sm:text-4xl tracking-widest text-white uppercase text-glow-mono">
               {category.name}
             </h1>
             <p className="text-[10px] text-neutral-500 font-bold mt-1 tracking-widest uppercase">
@@ -273,10 +345,10 @@ export default function CategoryDetailPage() {
           
           <button
             onClick={triggerFileInput}
-            className="px-5 py-2.5 rounded-lg bg-white text-black hover:bg-neutral-200 font-bold text-sm transition-all flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-white text-black hover:bg-neutral-200 font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer"
           >
             <Upload className="w-4 h-4 text-black" />
-            <span>UPLOAD IMAGES</span>
+            <span>UPLOAD</span>
           </button>
         </div>
       </div>
@@ -298,7 +370,7 @@ export default function CategoryDetailPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
           {images.map((image, index) => (
             <div
               key={image.id}
@@ -318,13 +390,13 @@ export default function CategoryDetailPage() {
                 </span>
               </div>
 
-              {/* Deletion button - monochrome style */}
+              {/* Delete button — always visible on mobile, hover-only on desktop */}
               <button
                 onClick={(e) => handleDeleteImage(image.id, e)}
-                className="absolute top-2.5 right-2.5 p-2 rounded-lg bg-black/80 border border-neutral-800 text-neutral-400 hover:bg-white hover:text-black hover:border-white transition-all opacity-0 group-hover:opacity-100 z-20 focus:opacity-100 cursor-pointer"
+                className="absolute top-2 right-2 p-1.5 sm:p-2 rounded-lg bg-black/80 border border-neutral-800 text-neutral-400 hover:bg-white hover:text-black hover:border-white transition-all sm:opacity-0 sm:group-hover:opacity-100 opacity-100 z-20 focus:opacity-100 cursor-pointer"
                 title="Remove Image"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           ))}
@@ -347,6 +419,8 @@ export default function CategoryDetailPage() {
         currentIndex={lightboxIndex}
         setCurrentIndex={setLightboxIndex}
       />
+
+      <CustomDialog {...dialogConfig} />
     </div>
   );
 }

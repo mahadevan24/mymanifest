@@ -9,6 +9,7 @@ import { runLocalToCloudMigration, clearLocalData, MigrationStatus } from "@/lib
 import CategoryCard from "@/components/category-card";
 import Modal from "@/components/ui/modal";
 import confetti from "canvas-confetti";
+import CustomDialog from "@/components/ui/custom-dialog";
 
 export default function LandingPage() {
   const [db, setDb] = useState<DBService | null>(null);
@@ -25,6 +26,69 @@ export default function LandingPage() {
     step: "",
     progress: 0,
   });
+
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean;
+    type: "alert" | "confirm";
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
+    variant?: "info" | "warning" | "danger";
+  }>({
+    isOpen: false,
+    type: "alert",
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
+  const showAlert = (title: string, message: string, variant: "info" | "warning" | "danger" = "info") => {
+    return new Promise<void>((resolve) => {
+      setDialogConfig({
+        isOpen: true,
+        type: "alert",
+        title,
+        message,
+        confirmLabel: "UNDERSTOOD",
+        variant,
+        onConfirm: () => {
+          setDialogConfig((prev) => ({ ...prev, isOpen: false }));
+          resolve();
+        },
+      });
+    });
+  };
+
+  const showConfirm = (
+    title: string,
+    message: string,
+    variant: "info" | "warning" | "danger" = "info",
+    confirmLabel = "CONTINUE",
+    cancelLabel = "CANCEL"
+  ) => {
+    return new Promise<boolean>((resolve) => {
+      setDialogConfig({
+        isOpen: true,
+        type: "confirm",
+        title,
+        message,
+        confirmLabel,
+        cancelLabel,
+        variant,
+        onConfirm: () => {
+          setDialogConfig((prev) => ({ ...prev, isOpen: false }));
+          resolve(true);
+        },
+        onCancel: () => {
+          setDialogConfig((prev) => ({ ...prev, isOpen: false }));
+          resolve(false);
+        },
+      });
+    });
+  };
 
   useEffect(() => {
     async function initDB() {
@@ -72,20 +136,27 @@ export default function LandingPage() {
       }
     } catch (error) {
       console.error("Migration failed:", error);
-      alert("Migration failed. Please try again.");
+      await showAlert("Migration Failed", "Something went wrong while migrating your data. Please try again.", "danger");
     } finally {
       setIsMigrating(false);
     }
   };
 
   const handleClearLocalData = async () => {
-    if (!confirm("This will discard all local browser data without uploading anything. Continue?")) return;
+    const confirmed = await showConfirm(
+      "Discard Local Data?",
+      "This will permanently discard all local browser data without uploading anything. Continue?",
+      "danger",
+      "DISCARD DATA",
+      "KEEP DATA"
+    );
+    if (!confirmed) return;
     try {
       await clearLocalData();
       setHasLocalData(false);
     } catch (error) {
       console.error("Failed to clear local data:", error);
-      alert("Failed to clear local data. Please try again.");
+      await showAlert("Action Failed", "Failed to clear local data. Please try again.", "danger");
     }
   };
 
@@ -112,14 +183,14 @@ export default function LandingPage() {
       setCategories(updatedCats);
     } catch (error) {
       console.error("Failed to create vision board:", error);
-      alert("Failed to create board. Please try again.");
+      await showAlert("Initialization Failed", "Failed to create board. Please try again.", "danger");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow flex flex-col justify-start relative">
+    <div className="w-full px-4 sm:px-6 py-4 sm:py-6 flex flex-col sm:overflow-hidden" style={{ height: 'calc(100vh - 4rem)' }}>
       
       {/* Sync Banner */}
       {hasLocalData && db && db.isFirebase && (
@@ -153,15 +224,8 @@ export default function LandingPage() {
       )}
 
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-4">
         <h1 className="font-display font-bold text-xs tracking-[0.3em] text-neutral-500 uppercase">Vision Boards</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-black hover:bg-neutral-200 font-bold tracking-wider text-xs transition-all cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5 text-black" />
-          <span>NEW BOARD</span>
-        </button>
       </div>
 
       {/* Grid Display Section */}
@@ -173,7 +237,7 @@ export default function LandingPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 flex-1 min-h-0">
           {categories.map((category) => (
             <CategoryCard key={category.id} category={category} />
           ))}
@@ -181,7 +245,7 @@ export default function LandingPage() {
           {/* Empty Add card block */}
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="group aspect-[4/5] sm:aspect-[16/10] md:aspect-[4/5] lg:aspect-[3/4] rounded-xl border border-dashed border-neutral-800 hover:border-neutral-500 bg-neutral-950/20 flex flex-col items-center justify-center gap-4 p-6 hover:bg-neutral-900/30 transition-all duration-300 cursor-pointer"
+            className="group h-full min-h-48 rounded-xl border border-dashed border-neutral-800 hover:border-neutral-500 bg-neutral-950/20 flex flex-col items-center justify-center gap-4 p-6 hover:bg-neutral-900/30 transition-all duration-300 cursor-pointer"
           >
             <div className="w-12 h-12 rounded-lg bg-neutral-900 border border-neutral-800 group-hover:bg-white group-hover:border-white flex items-center justify-center text-neutral-400 group-hover:text-black transition-all">
               <FolderPlus className="w-5 h-5" />
@@ -266,6 +330,8 @@ export default function LandingPage() {
           </div>
         </div>
       </Modal>
+
+      <CustomDialog {...dialogConfig} />
     </div>
   );
 }
