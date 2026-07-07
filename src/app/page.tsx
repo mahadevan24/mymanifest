@@ -238,7 +238,7 @@ export default function LandingPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 flex-1 min-h-0">
-          {categories.map((category) => (
+          {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((category) => (
             <CategoryCard key={category.id} category={category} />
           ))}
 
