@@ -74,3 +74,55 @@ input:-webkit-autofill:active {
 .card-overlay-gradient {
   background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.5) 60%, rgba(0, 0, 0, 0.15) 100%);
 }
+
+/* Cinematic Pan / Ken Burns Animations */
+@keyframes cinematic-pan-1 {
+  0% {
+    transform: scale(1.15) translate3d(0%, 0%, 0);
+  }
+  50% {
+    transform: scale(1.35) translate3d(-6%, 4%, 0);
+  }
+  100% {
+    transform: scale(1.2) translate3d(4%, -2%, 0);
+  }
+}
+
+@keyframes cinematic-pan-2 {
+  0% {
+    transform: scale(1.35) translate3d(-5%, -4%, 0);
+  }
+  50% {
+    transform: scale(1.15) translate3d(4%, 4%, 0);
+  }
+  100% {
+    transform: scale(1.25) translate3d(-2%, 2%, 0);
+  }
+}
+
+@keyframes cinematic-pan-3 {
+  0% {
+    transform: scale(1.2) translate3d(5%, -3%, 0);
+  }
+  50% {
+    transform: scale(1.38) translate3d(-4%, 5%, 0);
+  }
+  100% {
+    transform: scale(1.15) translate3d(0%, -2%, 0);
+  }
+}
+
+.animate-cinematic-1 {
+  animation: cinematic-pan-1 14s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-cinematic-2 {
+  animation: cinematic-pan-2 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-cinematic-3 {
+  animation: cinematic-pan-3 16s ease-in-out infinite alternate;
+  will-change: transform;
+}

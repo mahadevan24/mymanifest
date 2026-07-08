@@ -1,40 +1,99 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { FolderHeart } from "lucide-react";
-import { Category, getDB } from "@/lib/db";
+import { Category, getDB, VisionImage } from "@/lib/db";
 
 interface CategoryCardProps {
   category: Category;
 }
 
 export default function CategoryCard({ category }: CategoryCardProps) {
-  const [coverUrl, setCoverUrl] = useState<string | undefined>(
-    category.coverImageUrl
-  );
+  const [images, setImages] = useState<VisionImage[]>([]);
+  const [urlA, setUrlA] = useState<string>("");
+  const [urlB, setUrlB] = useState<string>("");
+  const [activeLayer, setActiveLayer] = useState<"A" | "B">("A");
+
+  // Use refs to hold mutable values so the interval callback always
+  // reads the latest state without needing to restart the interval.
+  const activeLayerRef = useRef(activeLayer);
+  const urlARef = useRef(urlA);
+  const urlBRef = useRef(urlB);
+  const imagesRef = useRef(images);
+
+  activeLayerRef.current = activeLayer;
+  urlARef.current = urlA;
+  urlBRef.current = urlB;
+  imagesRef.current = images;
 
   useEffect(() => {
     let cancelled = false;
-    async function pickRandomImage() {
+    async function loadCategoryImages() {
       try {
         const db = await getDB();
-        const images = await db.getImages(category.id);
-        if (!cancelled && images.length > 0) {
-          const randomIndex = Math.floor(Math.random() * images.length);
-          setCoverUrl(images[randomIndex].url);
+        const list = await db.getImages(category.id);
+        if (!cancelled) {
+          setImages(list);
+          if (list.length > 0) {
+            const initialUrl = category.coverImageUrl || list[0].url;
+            setUrlA(initialUrl);
+            setUrlB(initialUrl);
+          } else if (category.coverImageUrl) {
+            setUrlA(category.coverImageUrl);
+            setUrlB(category.coverImageUrl);
+          }
         }
       } catch {
-        // silently fall back to coverImageUrl
+        if (category.coverImageUrl) {
+          setUrlA(category.coverImageUrl);
+          setUrlB(category.coverImageUrl);
+        }
       }
     }
-    pickRandomImage();
+    loadCategoryImages();
     return () => {
       cancelled = true;
     };
-  }, [category.id]);
+  }, [category.id, category.coverImageUrl]);
 
-  const hasCover = !!coverUrl;
+  const isEffect = !category.type || category.type === "effect";
+  const animIndex = category.id
+    ? (category.id.charCodeAt(category.id.length - 1) || 0) % 3
+    : 0;
+  const animationClass = isEffect
+    ? ["animate-cinematic-1", "animate-cinematic-2", "animate-cinematic-3"][animIndex]
+    : "";
+
+  const rotateImage = useCallback(() => {
+    const currentImages = imagesRef.current;
+    const currentLayer = activeLayerRef.current;
+    const currentUrl = currentLayer === "A" ? urlARef.current : urlBRef.current;
+
+    const otherImages = currentImages.filter((img) => img.url !== currentUrl);
+    if (otherImages.length === 0) return;
+
+    const randomImg = otherImages[Math.floor(Math.random() * otherImages.length)];
+
+    if (currentLayer === "A") {
+      setUrlB(randomImg.url);
+      setActiveLayer("B");
+    } else {
+      setUrlA(randomImg.url);
+      setActiveLayer("A");
+    }
+  }, []);
+
+  useEffect(() => {
+    // Only rotate if it's an effect category card.
+    // The image count check happens inside rotateImage via the ref.
+    if (!isEffect) return;
+
+    const timer = setInterval(rotateImage, 5000);
+    return () => clearInterval(timer);
+  }, [isEffect, rotateImage]);
+
+  const hasCover = !!urlA || !!urlB;
 
   return (
     <Link
@@ -43,12 +102,26 @@ export default function CategoryCard({ category }: CategoryCardProps) {
     >
       {/* Background Image / Placeholder */}
       {hasCover ? (
-        <img
-          src={coverUrl}
-          alt={`${category.name} vision board`}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-          loading="lazy"
-        />
+        <div className="absolute inset-0 w-full h-full overflow-hidden transition-transform duration-1000 ease-out group-hover:scale-105">
+          {urlA && (
+            <img
+              src={urlA}
+              alt={`${category.name} vision board layer A`}
+              style={{ opacity: activeLayer === "A" ? 1 : 0 }}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${animationClass}`}
+              loading="lazy"
+            />
+          )}
+          {urlB && (
+            <img
+              src={urlB}
+              alt={`${category.name} vision board layer B`}
+              style={{ opacity: activeLayer === "B" ? 1 : 0 }}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${animationClass}`}
+              loading="lazy"
+            />
+          )}
+        </div>
       ) : (
         <div className="absolute inset-0 bg-neutral-950 flex flex-col items-center justify-center gap-2 text-neutral-700 group-hover:text-neutral-500 transition-colors duration-500">
           <FolderHeart className="w-10 h-10 stroke-[1.25]" />
