@@ -71,33 +71,94 @@ const SEED_DATA: SeedCategory[] = [
   },
 ];
 
+const SEED_CAUSES: SeedCategory[] = [
+  {
+    name: "JOINING A PRODUCT BASED COMPANY WITH 40LPA",
+    images: [
+      {
+        name: "Developer Writing Code",
+        url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        name: "Modern Workplace Workspace",
+        url: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        name: "Working at Desk Laptop Setup",
+        url: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=800&q=80",
+      },
+    ],
+  },
+  {
+    name: "UNDERSTANDING THINGS IN FIRST PRINCIPLES",
+    images: [
+      {
+        name: "Mechanical Blueprint and Gears",
+        url: "https://images.unsplash.com/photo-1453733190148-c44698c26588?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        name: "Architectural Drafting Workspace",
+        url: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        name: "Logical Reasoning and Analysis",
+        url: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
+      },
+    ],
+  },
+  {
+    name: "FUNDAMENTALS OF PHYSICS, MATH & CS",
+    images: [
+      {
+        name: "Abstract Physics and Light Waves",
+        url: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        name: "Advanced Equations on Chalkboard",
+        url: "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        name: "Binary Coding and Circuit Matrix",
+        url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
+      },
+    ],
+  },
+];
+
 export async function seedDatabaseIfEmpty(db: DBService): Promise<void> {
-  // Only seed if empty
   const existingCategories = await db.getCategories();
-  if (existingCategories.length > 0) {
+  
+  const hasEffects = existingCategories.some((c) => (c.type || "effect") === "effect");
+  const hasCauses = existingCategories.some((c) => c.type === "cause");
+
+  const effectsToSeed = !hasEffects ? SEED_DATA : [];
+  const causesToSeed = !hasCauses ? SEED_CAUSES : [];
+
+  if (effectsToSeed.length === 0 && causesToSeed.length === 0) {
     return;
   }
 
-  console.log("Seeding empty database with sample vision boards...");
+  console.log(
+    `Seeding database. Effects to seed: ${effectsToSeed.length}, Causes to seed: ${causesToSeed.length}`
+  );
 
-  // We are bypassing the standard uploadImages File-based API to write raw URL structures 
-  // into the IndexedDB database directly or write them to Firestore.
-  // We can write seed helpers matching the backend.
   if (db.isFirebase) {
-    // For firebase we can initialize via firestore setDoc
     try {
       const { doc, setDoc } = await import("firebase/firestore");
       // Grab db ref from the FirebaseDBService
       // @ts-ignore
       const firestore = db.db;
 
-      for (const item of SEED_DATA) {
+      // Seed effects
+      for (let index = 0; index < effectsToSeed.length; index++) {
+        const item = effectsToSeed[index];
         const catId = "cat_" + Math.random().toString(36).substring(2, 11);
         const category: Category = {
           id: catId,
           name: item.name,
           coverImageUrl: item.images[0].url,
-          createdAt: Date.now() - SEED_DATA.indexOf(item) * 1000,
+          createdAt: Date.now() - index * 1000,
+          type: "effect",
         };
         await setDoc(doc(firestore, "categories", catId), category);
 
@@ -109,7 +170,34 @@ export async function seedDatabaseIfEmpty(db: DBService): Promise<void> {
             categoryId: catId,
             url: img.url,
             name: img.name,
-            createdAt: Date.now() + i - SEED_DATA.indexOf(item) * 10000,
+            createdAt: Date.now() + i - index * 10000,
+          };
+          await setDoc(doc(firestore, "images", imgId), visionImage);
+        }
+      }
+
+      // Seed causes
+      for (let index = 0; index < causesToSeed.length; index++) {
+        const item = causesToSeed[index];
+        const catId = "cat_" + Math.random().toString(36).substring(2, 11);
+        const category: Category = {
+          id: catId,
+          name: item.name,
+          coverImageUrl: item.images[0].url,
+          createdAt: Date.now() - index * 1000 - 100000,
+          type: "cause",
+        };
+        await setDoc(doc(firestore, "categories", catId), category);
+
+        for (let i = 0; i < item.images.length; i++) {
+          const img = item.images[i];
+          const imgId = "img_" + Math.random().toString(36).substring(2, 11);
+          const visionImage: VisionImage = {
+            id: imgId,
+            categoryId: catId,
+            url: img.url,
+            name: img.name,
+            createdAt: Date.now() + i - index * 10000 - 100000,
           };
           await setDoc(doc(firestore, "images", imgId), visionImage);
         }
@@ -124,45 +212,52 @@ export async function seedDatabaseIfEmpty(db: DBService): Promise<void> {
       const openDbRequest = db.openDB();
       const rawDb: IDBDatabase = await openDbRequest;
       
-      for (const item of SEED_DATA) {
-        const catId = "cat_" + Math.random().toString(36).substring(2, 11);
-        const category: Category = {
-          id: catId,
-          name: item.name,
-          coverImageUrl: item.images[0].url,
-          createdAt: Date.now() - SEED_DATA.indexOf(item) * 1000,
-        };
-
-        // Write Category
-        await new Promise<void>((resolve, reject) => {
-          const trans = rawDb.transaction("categories", "readwrite");
-          const store = trans.objectStore("categories");
-          const req = store.add(category);
-          req.onsuccess = () => resolve();
-          req.onerror = () => reject(req.error);
-        });
-
-        // Write Images
-        for (let i = 0; i < item.images.length; i++) {
-          const img = item.images[i];
-          const imgId = "img_" + Math.random().toString(36).substring(2, 11);
-          const visionImage: VisionImage = {
-            id: imgId,
-            categoryId: catId,
-            url: img.url,
-            name: img.name,
-            createdAt: Date.now() + i - SEED_DATA.indexOf(item) * 10000,
+      const seedSet = async (list: SeedCategory[], type: "cause" | "effect") => {
+        for (let index = 0; index < list.length; index++) {
+          const item = list[index];
+          const catId = "cat_" + Math.random().toString(36).substring(2, 11);
+          const category: Category = {
+            id: catId,
+            name: item.name,
+            coverImageUrl: item.images[0].url,
+            createdAt: Date.now() - index * 1000 - (type === "cause" ? 100000 : 0),
+            type,
           };
 
+          // Write Category
           await new Promise<void>((resolve, reject) => {
-            const trans = rawDb.transaction("images", "readwrite");
-            const store = trans.objectStore("images");
-            const req = store.add(visionImage);
+            const trans = rawDb.transaction("categories", "readwrite");
+            const store = trans.objectStore("categories");
+            const req = store.add(category);
             req.onsuccess = () => resolve();
             req.onerror = () => reject(req.error);
           });
+
+          // Write Images
+          for (let i = 0; i < item.images.length; i++) {
+            const img = item.images[i];
+            const imgId = "img_" + Math.random().toString(36).substring(2, 11);
+            const visionImage: VisionImage = {
+              id: imgId,
+              categoryId: catId,
+              url: img.url,
+              name: img.name,
+              createdAt: Date.now() + i - index * 10000 - (type === "cause" ? 100000 : 0),
+            };
+
+            await new Promise<void>((resolve, reject) => {
+              const trans = rawDb.transaction("images", "readwrite");
+              const store = trans.objectStore("images");
+              const req = store.add(visionImage);
+              req.onsuccess = () => resolve();
+              req.onerror = () => reject(req.error);
+            });
+          }
         }
-      }
+      };
+
+      await seedSet(effectsToSeed, "effect");
+      await seedSet(causesToSeed, "cause");
     } catch (e) {
       console.error("IndexedDB seeding failed:", e);
     }

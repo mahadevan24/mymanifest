@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Trash2, Upload, Loader2, Image as ImageIcon, Pencil } from "lucide-react";
 import { getDB, Category, VisionImage, DBService } from "@/lib/db";
 import UploadModal from "@/components/ui/upload-modal";
 import Lightbox from "@/components/ui/lightbox";
 import CustomDialog from "@/components/ui/custom-dialog";
+import Modal from "@/components/ui/modal";
 
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -40,6 +41,11 @@ export default function CategoryDetailPage() {
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [renameImageId, setRenameImageId] = useState("");
+  const [renameImageName, setRenameImageName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const [dialogConfig, setDialogConfig] = useState<{
     isOpen: boolean;
@@ -266,6 +272,37 @@ export default function CategoryDetailPage() {
     }
   };
 
+  const triggerRenameImage = (imageId: string, currentName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setRenameImageId(imageId);
+    setRenameImageName(currentName || "");
+    setIsRenameModalOpen(true);
+  };
+
+  const handleRenameImage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!renameImageName.trim() || !db || !category) return;
+
+    setIsRenaming(true);
+    try {
+      await db.updateImageName(category.id, renameImageId, renameImageName.trim());
+      setImages((prevImages) =>
+        prevImages.map((img) =>
+          img.id === renameImageId ? { ...img, name: renameImageName.trim() } : img
+        )
+      );
+      setIsRenameModalOpen(false);
+      setRenameImageId("");
+      setRenameImageName("");
+    } catch (error) {
+      console.error("Failed to rename image:", error);
+      await showAlert("Action Failed", "Failed to rename image. Please try again.", "danger");
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
   const handleOpenLightbox = (index: number) => {
     setLightboxIndex(index);
     setIsLightboxOpen(true);
@@ -399,6 +436,15 @@ export default function CategoryDetailPage() {
                 </span>
               </div>
 
+              {/* Edit button — always visible on mobile, hover-only on desktop */}
+              <button
+                onClick={(e) => triggerRenameImage(image.id, image.name, e)}
+                className="absolute top-2 right-11 sm:right-13 p-1.5 sm:p-2 rounded-lg bg-black/80 border border-neutral-800 text-neutral-400 hover:bg-white hover:text-black hover:border-white transition-all sm:opacity-0 sm:group-hover:opacity-100 opacity-100 z-20 focus:opacity-100 cursor-pointer"
+                title="Edit Title"
+              >
+                <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+
               {/* Delete button — always visible on mobile, hover-only on desktop */}
               <button
                 onClick={(e) => handleDeleteImage(image.id, e)}
@@ -428,6 +474,49 @@ export default function CategoryDetailPage() {
         currentIndex={lightboxIndex}
         setCurrentIndex={setLightboxIndex}
       />
+
+      <Modal
+        isOpen={isRenameModalOpen}
+        onClose={() => {
+          setIsRenameModalOpen(false);
+          setRenameImageId("");
+          setRenameImageName("");
+        }}
+        title="Edit Image Title"
+      >
+        <form onSubmit={handleRenameImage} autoComplete="off" className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="rename-name" className="text-xs font-semibold text-neutral-400 tracking-wider">
+              IMAGE TITLE
+            </label>
+            <input
+              id="rename-name"
+              type="text"
+              required
+              autoComplete="off"
+              placeholder="e.g. Developer Writing Code"
+              value={renameImageName}
+              onChange={(e) => setRenameImageName(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-600 text-sm focus:border-white focus:outline-none transition-colors"
+              disabled={isRenaming}
+              autoFocus
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isRenaming || !renameImageName.trim()}
+            className="w-full py-3 mt-2 rounded-lg bg-white text-black font-bold tracking-wider hover:bg-neutral-200 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
+          >
+            {isRenaming ? (
+              <Loader2 className="w-4 h-4 animate-spin text-black" />
+            ) : (
+              <Pencil className="w-4 h-4 text-black" />
+            )}
+            <span>SAVE TITLE</span>
+          </button>
+        </form>
+      </Modal>
 
       <CustomDialog {...dialogConfig} />
     </div>

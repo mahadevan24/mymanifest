@@ -3,6 +3,7 @@ export interface Category {
   name: string;
   coverImageUrl?: string;
   createdAt: number;
+  type?: "cause" | "effect";
 }
 
 export interface VisionImage {
@@ -17,11 +18,12 @@ export interface VisionImage {
 export interface DBService {
   isFirebase: boolean;
   getCategories(): Promise<Category[]>;
-  createCategory(name: string): Promise<Category>;
+  createCategory(name: string, type?: "cause" | "effect"): Promise<Category>;
   deleteCategory(id: string): Promise<void>;
   getImages(categoryId: string): Promise<VisionImage[]>;
   uploadImages(categoryId: string, files: File[], onProgress?: (progress: number) => void): Promise<VisionImage[]>;
   deleteImage(categoryId: string, imageId: string): Promise<void>;
+  updateImageName(categoryId: string, imageId: string, name: string): Promise<void>;
 }
 
 // Config checker helper
@@ -50,6 +52,7 @@ export async function getDB(): Promise<DBService> {
       getImages: async () => [],
       uploadImages: async () => [],
       deleteImage: async () => {},
+      updateImageName: async () => {},
     };
   }
 

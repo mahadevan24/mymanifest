@@ -19,6 +19,11 @@ export default function LandingPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"effect" | "cause">("effect");
+
+  const filteredCategories = categories.filter(
+    (cat) => (cat.type || "effect") === activeTab
+  );
 
   const [hasLocalData, setHasLocalData] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
@@ -166,7 +171,7 @@ export default function LandingPage() {
 
     setIsSubmitting(true);
     try {
-      const newCat = await db.createCategory(newBoardName.trim().toUpperCase());
+      const newCat = await db.createCategory(newBoardName.trim().toUpperCase(), activeTab);
       
       // Monochrome elegant confetti burst
       confetti({
@@ -223,9 +228,35 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* Section Header */}
-      <div className="mb-4">
-        <h1 className="font-display font-bold text-xs tracking-[0.3em] text-neutral-500 uppercase">Vision Boards</h1>
+      {/* Section Header & Tab Controls */}
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="font-display font-bold text-xs tracking-[0.3em] text-neutral-500 uppercase">
+            {activeTab === "effect" ? "Vision Boards (Effects)" : "Manifestation Cards (Causes)"}
+          </h1>
+        </div>
+        <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-900 self-stretch sm:self-auto shrink-0 shadow-inner">
+          <button
+            onClick={() => setActiveTab("effect")}
+            className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg font-display text-[10px] font-bold tracking-widest transition-all duration-300 cursor-pointer ${
+              activeTab === "effect"
+                ? "bg-white text-black shadow-md"
+                : "text-neutral-500 hover:text-neutral-300 bg-transparent"
+            }`}
+          >
+            EFFECTS
+          </button>
+          <button
+            onClick={() => setActiveTab("cause")}
+            className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg font-display text-[10px] font-bold tracking-widest transition-all duration-300 cursor-pointer ${
+              activeTab === "cause"
+                ? "bg-white text-black shadow-md"
+                : "text-neutral-500 hover:text-neutral-300 bg-transparent"
+            }`}
+          >
+            CAUSES
+          </button>
+        </div>
       </div>
 
       {/* Grid Display Section */}
@@ -239,7 +270,7 @@ export default function LandingPage() {
       ) : (
         <div className="overflow-y-auto flex-1 min-h-0 pr-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" style={{ gridAutoRows: '50vh' }}>
-            {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((category) => (
+            {[...filteredCategories].sort((a, b) => a.name.localeCompare(b.name)).map((category) => (
               <CategoryCard key={category.id} category={category} />
             ))}
 
@@ -252,8 +283,12 @@ export default function LandingPage() {
                 <FolderPlus className="w-5 h-5" />
               </div>
               <div className="text-center">
-                <span className="block text-sm font-semibold text-neutral-300 group-hover:text-white transition-colors uppercase tracking-wider">Create New Board</span>
-                <span className="block text-xs text-neutral-500 mt-1 uppercase tracking-widest">Start manifest zone</span>
+                <span className="block text-sm font-semibold text-neutral-300 group-hover:text-white transition-colors uppercase tracking-wider font-display">
+                  {activeTab === "effect" ? "Create New Board" : "Create New Cause"}
+                </span>
+                <span className="block text-xs text-neutral-500 mt-1 uppercase tracking-widest">
+                  {activeTab === "effect" ? "Start manifest zone" : "Establish standard actions"}
+                </span>
               </div>
             </button>
           </div>
@@ -267,19 +302,23 @@ export default function LandingPage() {
           setIsModalOpen(false);
           setNewBoardName("");
         }}
-        title="Create Vision Board"
+        title={activeTab === "effect" ? "Create Vision Board" : "Create Cause Manifestation"}
       >
         <form onSubmit={handleCreateBoard} autoComplete="off" className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="board-name" className="text-xs font-semibold text-neutral-400 tracking-wider">
-              BOARD NAME
+              {activeTab === "effect" ? "BOARD NAME" : "CAUSE NAME"}
             </label>
             <input
               id="board-name"
               type="text"
               required
               autoComplete="off"
-              placeholder="e.g. APARTMENT, CARS, TRAVEL, DREAMS"
+              placeholder={
+                activeTab === "effect"
+                  ? "e.g. APARTMENT, CARS, TRAVEL, DREAMS"
+                  : "e.g. JOINING A COMPANY, UNDERSTANDING FIRST PRINCIPLES"
+              }
               value={newBoardName}
               onChange={(e) => setNewBoardName(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-600 text-sm focus:border-white focus:outline-none transition-colors"
@@ -298,7 +337,7 @@ export default function LandingPage() {
             ) : (
               <Plus className="w-4 h-4 text-black" />
             )}
-            <span>INITIALIZE BOARD</span>
+            <span>{activeTab === "effect" ? "INITIALIZE BOARD" : "INITIALIZE CAUSE"}</span>
           </button>
         </form>
       </Modal>

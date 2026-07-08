@@ -57,18 +57,20 @@ export class FirebaseDBService implements DBService {
         name: data.name,
         coverImageUrl: data.coverImageUrl,
         createdAt: data.createdAt,
+        type: data.type || "effect",
       });
     });
     // Sort client-side to avoid requiring a Firestore composite index
     return categories.sort((a, b) => b.createdAt - a.createdAt);
   }
 
-  async createCategory(name: string): Promise<Category> {
+  async createCategory(name: string, type?: "cause" | "effect"): Promise<Category> {
     const id = "cat_" + Math.random().toString(36).substring(2, 11);
     const category: Category = {
       id,
       name,
       createdAt: Date.now(),
+      type: type || "effect",
     };
     await setDoc(doc(this.db, "categories", id), category);
     return category;
@@ -227,5 +229,10 @@ export class FirebaseDBService implements DBService {
         await updateDoc(catDocRef, { coverImageUrl: null });
       }
     }
+  }
+
+  async updateImageName(categoryId: string, imageId: string, name: string): Promise<void> {
+    const imgDocRef = doc(this.db, "images", imageId);
+    await updateDoc(imgDocRef, { name });
   }
 }

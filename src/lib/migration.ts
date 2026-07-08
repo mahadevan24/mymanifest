@@ -77,7 +77,7 @@ export async function runLocalToCloudMigration(
     );
 
     if (!cloudCategory) {
-      cloudCategory = await cloudDb.createCategory(category.name);
+      cloudCategory = await cloudDb.createCategory(category.name, category.type);
     }
 
     // Fetch existing cloud images for this category to deduplicate by name

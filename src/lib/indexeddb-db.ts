@@ -39,13 +39,14 @@ export class IndexedDBService implements DBService {
     });
   }
 
-  async createCategory(name: string): Promise<Category> {
+  async createCategory(name: string, type?: "cause" | "effect"): Promise<Category> {
     const db = await this.openDB();
     const id = "cat_" + Math.random().toString(36).substring(2, 11);
     const category: Category = {
       id,
       name,
       createdAt: Date.now(),
+      type: type || "effect",
     };
 
     return new Promise((resolve, reject) => {
@@ -207,5 +208,27 @@ export class IndexedDBService implements DBService {
         request.onerror = () => reject(request.error);
       });
     }
+  }
+
+  async updateImageName(categoryId: string, imageId: string, name: string): Promise<void> {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("images", "readwrite");
+      const store = transaction.objectStore("images");
+      const getRequest = store.get(imageId);
+
+      getRequest.onsuccess = () => {
+        const image = getRequest.result as VisionImage;
+        if (image) {
+          image.name = name;
+          const putRequest = store.put(image);
+          putRequest.onsuccess = () => resolve();
+          putRequest.onerror = () => reject(putRequest.error);
+        } else {
+          reject(new Error("Image not found"));
+        }
+      };
+      getRequest.onerror = () => reject(getRequest.error);
+    });
   }
 }
