@@ -24,6 +24,7 @@ export interface DBService {
   uploadImages(categoryId: string, files: File[], onProgress?: (progress: number) => void): Promise<VisionImage[]>;
   deleteImage(categoryId: string, imageId: string): Promise<void>;
   updateImageName(categoryId: string, imageId: string, name: string): Promise<void>;
+  updateCategoryName(categoryId: string, name: string): Promise<void>;
 }
 
 // Config checker helper
@@ -53,6 +54,7 @@ export async function getDB(): Promise<DBService> {
       uploadImages: async () => [],
       deleteImage: async () => {},
       updateImageName: async () => {},
+      updateCategoryName: async () => {},
     };
   }
 

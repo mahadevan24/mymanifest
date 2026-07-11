@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Trash2, Upload, Loader2, Image as ImageIcon, Pencil } from "lucide-react";
 import { getDB, Category, VisionImage, DBService } from "@/lib/db";
@@ -46,6 +46,10 @@ export default function CategoryDetailPage() {
   const [renameImageId, setRenameImageId] = useState("");
   const [renameImageName, setRenameImageName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const [dialogConfig, setDialogConfig] = useState<{
     isOpen: boolean;
@@ -308,6 +312,31 @@ export default function CategoryDetailPage() {
     setIsLightboxOpen(true);
   };
 
+  const startEditingTitle = () => {
+    if (!category) return;
+    setEditTitleValue(category.name);
+    setIsEditingTitle(true);
+    setTimeout(() => titleInputRef.current?.select(), 0);
+  };
+
+  const saveCategoryTitle = useCallback(async () => {
+    if (!db || !category) return;
+    const trimmed = editTitleValue.trim().toUpperCase();
+    if (!trimmed || trimmed === category.name) {
+      setIsEditingTitle(false);
+      return;
+    }
+    try {
+      await db.updateCategoryName(category.id, trimmed);
+      setCategory({ ...category, name: trimmed });
+    } catch (error) {
+      console.error("Failed to rename category:", error);
+      await showAlert("Action Failed", "Failed to rename the board. Please try again.", "danger");
+    } finally {
+      setIsEditingTitle(false);
+    }
+  }, [db, category, editTitleValue]);
+
   if (isLoading) {
     return (
       <div className="flex-grow flex items-center justify-center py-20">
@@ -366,9 +395,29 @@ export default function CategoryDetailPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="font-display font-black text-2xl sm:text-4xl tracking-widest text-white uppercase text-glow-mono">
-              {category.name}
-            </h1>
+            {isEditingTitle ? (
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={editTitleValue}
+                onChange={(e) => setEditTitleValue(e.target.value)}
+                onBlur={saveCategoryTitle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); saveCategoryTitle(); }
+                  if (e.key === "Escape") setIsEditingTitle(false);
+                }}
+                className="font-display font-black text-2xl sm:text-4xl tracking-widest text-white uppercase bg-transparent border-b-2 border-white/30 focus:border-white outline-none w-full transition-colors"
+                autoFocus
+              />
+            ) : (
+              <h1
+                onClick={startEditingTitle}
+                title="Click to rename"
+                className="font-display font-black text-2xl sm:text-4xl tracking-widest text-white uppercase text-glow-mono cursor-pointer hover:text-neutral-300 transition-colors"
+              >
+                {category.name}
+              </h1>
+            )}
             <p className="text-[10px] text-neutral-500 font-bold mt-1 tracking-widest uppercase">
               {images.length} IMAGE{images.length !== 1 ? "S" : ""} MANIFESTED
             </p>

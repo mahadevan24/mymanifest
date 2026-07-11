@@ -86,6 +86,10 @@ export class FirebaseDBService implements DBService {
     await deleteDoc(doc(this.db, "categories", id));
   }
 
+  async updateCategoryName(categoryId: string, name: string): Promise<void> {
+    await updateDoc(doc(this.db, "categories", categoryId), { name });
+  }
+
   async getImages(categoryId: string): Promise<VisionImage[]> {
     const imgsCol = collection(this.db, "images");
     const q = query(

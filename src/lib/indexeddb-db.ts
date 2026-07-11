@@ -79,6 +79,28 @@ export class IndexedDBService implements DBService {
     }
   }
 
+  async updateCategoryName(categoryId: string, name: string): Promise<void> {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("categories", "readwrite");
+      const store = transaction.objectStore("categories");
+      const getRequest = store.get(categoryId);
+
+      getRequest.onsuccess = () => {
+        const category = getRequest.result;
+        if (!category) {
+          reject(new Error("Category not found"));
+          return;
+        }
+        category.name = name;
+        const putRequest = store.put(category);
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
+      };
+      getRequest.onerror = () => reject(getRequest.error);
+    });
+  }
+
   async getImages(categoryId: string): Promise<VisionImage[]> {
     const db = await this.openDB();
     return new Promise((resolve, reject) => {
