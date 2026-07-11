@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Loader2, CloudUpload } from "lucide-react";
 import { getDB, Category, DBService } from "@/lib/db";
 import { seedDatabaseIfEmpty } from "@/lib/mock-data";
@@ -24,6 +24,69 @@ export default function LandingPage() {
   const filteredCategories = categories.filter(
     (cat) => (cat.type || "effect") === activeTab
   );
+
+  // Drag-and-drop state
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const dragNodeRef = useRef<EventTarget | null>(null);
+
+  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
+    setDragIndex(index);
+    dragNodeRef.current = e.target;
+    // Use setTimeout so the browser captures the element before we style it
+    setTimeout(() => {
+      setDragIndex(index);
+    }, 0);
+    e.dataTransfer.effectAllowed = "move";
+  }, []);
+
+  const handleDragEnter = useCallback((index: number) => {
+    setOverIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dragIndex === null || overIndex === null || dragIndex === overIndex) {
+      setDragIndex(null);
+      setOverIndex(null);
+      return;
+    }
+
+    // Reorder the filtered list
+    const reordered = [...filteredCategories];
+    const [moved] = reordered.splice(dragIndex, 1);
+    reordered.splice(overIndex, 0, moved);
+
+    // Build new full categories array preserving the other tab's categories
+    const otherCategories = categories.filter(
+      (cat) => (cat.type || "effect") !== activeTab
+    );
+    const updatedReordered = reordered.map((cat, i) => ({ ...cat, order: i }));
+    setCategories([...otherCategories, ...updatedReordered]);
+
+    // Persist order to DB
+    if (db) {
+      try {
+        await db.updateCategoryOrder(reordered.map((cat) => cat.id));
+      } catch (error) {
+        console.error("Failed to save category order:", error);
+      }
+    }
+
+    setDragIndex(null);
+    setOverIndex(null);
+  }, [dragIndex, overIndex, filteredCategories, categories, activeTab, db]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragIndex(null);
+    setOverIndex(null);
+    dragNodeRef.current = null;
+  }, []);
 
   const [hasLocalData, setHasLocalData] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
@@ -241,8 +304,24 @@ export default function LandingPage() {
       ) : (
         <div className="flex-1 min-h-0">
           <div className="grid grid-cols-2 sm:grid-cols-3 h-full" style={{ gridTemplateRows: '1fr 1fr' }}>
-            {[...filteredCategories].sort((a, b) => a.name.localeCompare(b.name)).map((category) => (
-              <CategoryCard key={category.id} category={category} />
+            {filteredCategories.map((category, index) => (
+              <div
+                key={category.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragEnter={() => handleDragEnter(index)}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+                className="relative h-full"
+                style={{ cursor: "grab" }}
+              >
+                <CategoryCard
+                  category={category}
+                  isDragging={dragIndex === index}
+                  isOver={overIndex === index && dragIndex !== index}
+                />
+              </div>
             ))}
           </div>
         </div>

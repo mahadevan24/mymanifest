@@ -58,10 +58,16 @@ export class FirebaseDBService implements DBService {
         coverImageUrl: data.coverImageUrl,
         createdAt: data.createdAt,
         type: data.type || "effect",
+        order: data.order,
       });
     });
-    // Sort client-side to avoid requiring a Firestore composite index
-    return categories.sort((a, b) => b.createdAt - a.createdAt);
+    // Sort client-side by order ascending (fallback to createdAt descending for unordered)
+    return categories.sort((a, b) => {
+      const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+      const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return b.createdAt - a.createdAt;
+    });
   }
 
   async createCategory(name: string, type?: "cause" | "effect"): Promise<Category> {
@@ -238,5 +244,12 @@ export class FirebaseDBService implements DBService {
   async updateImageName(categoryId: string, imageId: string, name: string): Promise<void> {
     const imgDocRef = doc(this.db, "images", imageId);
     await updateDoc(imgDocRef, { name });
+  }
+
+  async updateCategoryOrder(orderedIds: string[]): Promise<void> {
+    for (let i = 0; i < orderedIds.length; i++) {
+      const catDocRef = doc(this.db, "categories", orderedIds[i]);
+      await updateDoc(catDocRef, { order: i });
+    }
   }
 }

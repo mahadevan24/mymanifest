@@ -32,8 +32,13 @@ export class IndexedDBService implements DBService {
 
       request.onsuccess = () => {
         const categories = request.result as Category[];
-        // Sort by createdAt descending
-        resolve(categories.sort((a, b) => b.createdAt - a.createdAt));
+        // Sort by order ascending (fallback to createdAt descending for unordered)
+        resolve(categories.sort((a, b) => {
+          const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+          const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+          if (orderA !== orderB) return orderA - orderB;
+          return b.createdAt - a.createdAt;
+        }));
       };
       request.onerror = () => reject(request.error);
     });
@@ -252,5 +257,29 @@ export class IndexedDBService implements DBService {
       };
       getRequest.onerror = () => reject(getRequest.error);
     });
+  }
+
+  async updateCategoryOrder(orderedIds: string[]): Promise<void> {
+    const db = await this.openDB();
+    const transaction = db.transaction("categories", "readwrite");
+    const store = transaction.objectStore("categories");
+
+    for (let i = 0; i < orderedIds.length; i++) {
+      await new Promise<void>((resolve, reject) => {
+        const getRequest = store.get(orderedIds[i]);
+        getRequest.onsuccess = () => {
+          const category = getRequest.result;
+          if (category) {
+            category.order = i;
+            const putRequest = store.put(category);
+            putRequest.onsuccess = () => resolve();
+            putRequest.onerror = () => reject(putRequest.error);
+          } else {
+            resolve(); // Skip missing categories
+          }
+        };
+        getRequest.onerror = () => reject(getRequest.error);
+      });
+    }
   }
 }

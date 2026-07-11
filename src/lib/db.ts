@@ -4,6 +4,7 @@ export interface Category {
   coverImageUrl?: string;
   createdAt: number;
   type?: "cause" | "effect";
+  order?: number;
 }
 
 export interface VisionImage {
@@ -25,6 +26,7 @@ export interface DBService {
   deleteImage(categoryId: string, imageId: string): Promise<void>;
   updateImageName(categoryId: string, imageId: string, name: string): Promise<void>;
   updateCategoryName(categoryId: string, name: string): Promise<void>;
+  updateCategoryOrder(orderedIds: string[]): Promise<void>;
 }
 
 // Config checker helper
@@ -55,6 +57,7 @@ export async function getDB(): Promise<DBService> {
       deleteImage: async () => {},
       updateImageName: async () => {},
       updateCategoryName: async () => {},
+      updateCategoryOrder: async () => {},
     };
   }
 

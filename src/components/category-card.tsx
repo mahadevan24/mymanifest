@@ -7,9 +7,11 @@ import { Category, getDB, VisionImage } from "@/lib/db";
 
 interface CategoryCardProps {
   category: Category;
+  isDragging?: boolean;
+  isOver?: boolean;
 }
 
-export default function CategoryCard({ category }: CategoryCardProps) {
+export default function CategoryCard({ category, isDragging, isOver }: CategoryCardProps) {
   const [images, setImages] = useState<VisionImage[]>([]);
   const [urlA, setUrlA] = useState<string>("");
   const [urlB, setUrlB] = useState<string>("");
@@ -98,7 +100,18 @@ export default function CategoryCard({ category }: CategoryCardProps) {
   return (
     <Link
       href={`/category/${category.id}`}
-      className="group relative block h-full min-h-0 w-full overflow-hidden hover:shadow-[0_0_30px_rgba(255,255,255,0.06)] transition-all duration-500 cursor-pointer"
+      className={`group relative block h-full min-h-0 w-full overflow-hidden transition-all duration-300 cursor-pointer ${
+        isDragging
+          ? "opacity-50 scale-95 shadow-2xl z-50"
+          : "hover:shadow-[0_0_30px_rgba(255,255,255,0.06)]"
+      } ${
+        isOver
+          ? "ring-2 ring-white/40 ring-offset-2 ring-offset-black scale-[1.02]"
+          : ""
+      }`}
+      onClick={(e) => {
+        if (isDragging) e.preventDefault();
+      }}
     >
       {/* Background Image / Placeholder */}
       {hasCover ? (
