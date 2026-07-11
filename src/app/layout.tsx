@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/navbar";
-
 const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin"],
@@ -37,8 +35,6 @@ export default function RootLayout({
         className="min-h-screen flex flex-col bg-black text-white font-sans selection:bg-neutral-800 selection:text-white"
         suppressHydrationWarning
       >
-        <Navbar />
-        
         <main className="flex-grow flex flex-col relative z-10">
           {children}
         </main>

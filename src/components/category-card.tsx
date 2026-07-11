@@ -98,7 +98,7 @@ export default function CategoryCard({ category }: CategoryCardProps) {
   return (
     <Link
       href={`/category/${category.id}`}
-      className="group relative block h-full min-h-48 w-full rounded-xl overflow-hidden border border-neutral-900 hover:border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.06)] transition-all duration-500 cursor-pointer"
+      className="group relative block h-full min-h-0 w-full overflow-hidden hover:shadow-[0_0_30px_rgba(255,255,255,0.06)] transition-all duration-500 cursor-pointer"
     >
       {/* Background Image / Placeholder */}
       {hasCover ? (
@@ -133,7 +133,7 @@ export default function CategoryCard({ category }: CategoryCardProps) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
       {/* Hover glow border */}
-      <div className="absolute inset-0 border border-white/0 group-hover:border-white/10 transition-colors duration-500 rounded-xl pointer-events-none" />
+      <div className="absolute inset-0 border border-white/0 group-hover:border-white/10 transition-colors duration-500 pointer-events-none" />
 
       {/* Board Title — pinned to bottom-left */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10 flex items-end justify-between">

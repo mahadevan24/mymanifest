@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, FolderPlus, Loader2, CloudUpload } from "lucide-react";
+import { Plus, Loader2, CloudUpload } from "lucide-react";
 import { getDB, Category, DBService } from "@/lib/db";
 import { seedDatabaseIfEmpty } from "@/lib/mock-data";
 import { IndexedDBService } from "@/lib/indexeddb-db";
@@ -195,67 +195,38 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 py-4 sm:py-6 flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
+    <div className="w-full flex flex-col relative" style={{ height: '100vh' }}>
       
-      {/* Sync Banner */}
-      {hasLocalData && db && db.isFirebase && (
-        <div className="mb-8 p-4 rounded-xl border border-amber-900/50 bg-amber-950/20 backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-300">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 mt-0.5 sm:mt-0">
-              <CloudUpload className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <h3 className="text-sm font-semibold text-amber-200 uppercase tracking-wider font-display">Local Data Detected</h3>
-              <p className="text-xs text-amber-400/80 mt-1 leading-relaxed">
-                You have boards stored locally in this browser. Sync uploads only <strong>new</strong> images (skips duplicates), or clear local data if you&apos;ve already uploaded everything.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
+      {/* Hover-reveal tab bar at top */}
+      <div
+        className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center group/tabs"
+      >
+        {/* Invisible hover trigger zone */}
+        <div className="w-full h-6" />
+        {/* Tab pill — slides down on hover */}
+        <div className="opacity-0 -translate-y-4 group-hover/tabs:opacity-100 group-hover/tabs:translate-y-0 transition-all duration-300 ease-out pointer-events-none group-hover/tabs:pointer-events-auto mt-1">
+          <div className="flex bg-black/80 backdrop-blur-xl p-1 rounded-xl border border-neutral-800 shadow-2xl shadow-black/50">
             <button
-              onClick={handleClearLocalData}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-neutral-700 hover:border-neutral-500 text-neutral-300 hover:text-white font-bold tracking-wider text-xs transition-colors cursor-pointer"
+              onClick={() => setActiveTab("effect")}
+              className={`px-6 py-2 rounded-lg font-display text-[10px] font-bold tracking-widest transition-all duration-300 cursor-pointer ${
+                activeTab === "effect"
+                  ? "bg-white text-black shadow-md"
+                  : "text-neutral-500 hover:text-neutral-300 bg-transparent"
+              }`}
             >
-              CLEAR LOCAL DATA
+              EFFECTS
             </button>
             <button
-              onClick={handleStartMigration}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold tracking-wider text-xs transition-colors cursor-pointer"
+              onClick={() => setActiveTab("cause")}
+              className={`px-6 py-2 rounded-lg font-display text-[10px] font-bold tracking-widest transition-all duration-300 cursor-pointer ${
+                activeTab === "cause"
+                  ? "bg-white text-black shadow-md"
+                  : "text-neutral-500 hover:text-neutral-300 bg-transparent"
+              }`}
             >
-              SYNC TO CLOUD
+              CAUSES
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Section Header & Tab Controls */}
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="font-display font-bold text-xs tracking-[0.3em] text-neutral-500 uppercase">
-            {activeTab === "effect" ? "Vision Boards (Effects)" : "Manifestation Cards (Causes)"}
-          </h1>
-        </div>
-        <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-900 self-stretch sm:self-auto shrink-0 shadow-inner">
-          <button
-            onClick={() => setActiveTab("effect")}
-            className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg font-display text-[10px] font-bold tracking-widest transition-all duration-300 cursor-pointer ${
-              activeTab === "effect"
-                ? "bg-white text-black shadow-md"
-                : "text-neutral-500 hover:text-neutral-300 bg-transparent"
-            }`}
-          >
-            EFFECTS
-          </button>
-          <button
-            onClick={() => setActiveTab("cause")}
-            className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg font-display text-[10px] font-bold tracking-widest transition-all duration-300 cursor-pointer ${
-              activeTab === "cause"
-                ? "bg-white text-black shadow-md"
-                : "text-neutral-500 hover:text-neutral-300 bg-transparent"
-            }`}
-          >
-            CAUSES
-          </button>
         </div>
       </div>
 
@@ -268,29 +239,11 @@ export default function LandingPage() {
           </div>
         </div>
       ) : (
-        <div className="overflow-y-auto flex-1 min-h-0 pr-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" style={{ gridAutoRows: '50vh' }}>
+        <div className="flex-1 min-h-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 h-full" style={{ gridTemplateRows: '1fr 1fr' }}>
             {[...filteredCategories].sort((a, b) => a.name.localeCompare(b.name)).map((category) => (
               <CategoryCard key={category.id} category={category} />
             ))}
-
-            {/* Empty Add card block */}
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="group rounded-xl border border-dashed border-neutral-800 hover:border-neutral-500 bg-neutral-950/20 flex flex-col items-center justify-center gap-4 p-6 hover:bg-neutral-900/30 transition-all duration-300 cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-lg bg-neutral-900 border border-neutral-800 group-hover:bg-white group-hover:border-white flex items-center justify-center text-neutral-400 group-hover:text-black transition-all">
-                <FolderPlus className="w-5 h-5" />
-              </div>
-              <div className="text-center">
-                <span className="block text-sm font-semibold text-neutral-300 group-hover:text-white transition-colors uppercase tracking-wider font-display">
-                  {activeTab === "effect" ? "Create New Board" : "Create New Cause"}
-                </span>
-                <span className="block text-xs text-neutral-500 mt-1 uppercase tracking-widest">
-                  {activeTab === "effect" ? "Start manifest zone" : "Establish standard actions"}
-                </span>
-              </div>
-            </button>
           </div>
         </div>
       )}
