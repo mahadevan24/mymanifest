@@ -150,7 +150,11 @@ export default function CategoryCard({ category, isDragging, isOver }: CategoryC
 
       {/* Board Title — pinned to bottom-left */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10 flex items-end justify-between">
-        <h3 className="font-display font-extrabold text-xl sm:text-2xl tracking-[0.2em] text-white uppercase leading-none">
+        <h3 className={`font-display font-extrabold text-xl sm:text-2xl tracking-[0.2em] text-white uppercase leading-none transition-all duration-300 ${
+          isEffect
+            ? "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0"
+            : ""
+        }`}>
           {category.name}
         </h3>
 
