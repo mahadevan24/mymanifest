@@ -16,6 +16,45 @@ export default function CategoryCard({ category, isDragging, isOver }: CategoryC
   const [urlA, setUrlA] = useState<string>("");
   const [urlB, setUrlB] = useState<string>("");
   const [activeLayer, setActiveLayer] = useState<"A" | "B">("A");
+  const [isTitleVisible, setIsTitleVisible] = useState<boolean>(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isEffect = !category.type || category.type === "effect";
+
+  const startTimer = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      setIsTitleVisible(false);
+    }, 5000);
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    if (!isEffect) return;
+    setIsTitleVisible(true);
+    startTimer();
+  }, [isEffect, startTimer]);
+
+  const handleMouseMove = useCallback(() => {
+    if (!isEffect) return;
+    setIsTitleVisible(true);
+    startTimer();
+  }, [isEffect, startTimer]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (!isEffect) return;
+    setIsTitleVisible(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, [isEffect]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   // Use refs to hold mutable values so the interval callback always
   // reads the latest state without needing to restart the interval.
@@ -59,7 +98,6 @@ export default function CategoryCard({ category, isDragging, isOver }: CategoryC
     };
   }, [category.id, category.coverImageUrl]);
 
-  const isEffect = !category.type || category.type === "effect";
   const animIndex = category.id
     ? (category.id.charCodeAt(category.id.length - 1) || 0) % 3
     : 0;
@@ -112,6 +150,9 @@ export default function CategoryCard({ category, isDragging, isOver }: CategoryC
       onClick={(e) => {
         if (isDragging) e.preventDefault();
       }}
+      onMouseEnter={handleMouseEnter}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Background Image / Placeholder */}
       {hasCover ? (
@@ -152,14 +193,18 @@ export default function CategoryCard({ category, isDragging, isOver }: CategoryC
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10 flex items-end justify-between">
         <h3 className={`font-display font-extrabold text-xl sm:text-2xl tracking-[0.2em] text-white uppercase leading-none transition-all duration-300 ${
           isEffect
-            ? "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0"
+            ? (isTitleVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1")
             : ""
         }`}>
           {category.name}
         </h3>
 
         {/* Enter board pill — appears on hover */}
-        <span className="px-2.5 py-1 text-[9px] font-bold tracking-widest text-white bg-white/10 border border-white/20 rounded-md opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+        <span className={`px-2.5 py-1 text-[9px] font-bold tracking-widest text-white bg-white/10 border border-white/20 rounded-md transition-all duration-300 ${
+          isEffect
+            ? (isTitleVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1")
+            : "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0"
+        }`}>
           OPEN
         </span>
       </div>
