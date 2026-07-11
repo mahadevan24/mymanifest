@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
+import AuthGate from "@/components/auth-gate";
 const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin"],
@@ -36,7 +37,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <main className="flex-grow flex flex-col relative z-10">
-          {children}
+          <AuthGate>{children}</AuthGate>
         </main>
       </body>
     </html>

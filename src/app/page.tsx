@@ -268,7 +268,7 @@ export default function LandingPage() {
         <div className="w-full h-6" />
         {/* Tab pill — slides down on hover */}
         <div className="opacity-0 -translate-y-4 group-hover/tabs:opacity-100 group-hover/tabs:translate-y-0 transition-all duration-300 ease-out pointer-events-none group-hover/tabs:pointer-events-auto mt-1">
-          <div className="flex bg-black/80 backdrop-blur-xl p-1 rounded-xl border border-neutral-800 shadow-2xl shadow-black/50">
+          <div className="flex items-center bg-black/80 backdrop-blur-xl p-1 rounded-xl border border-neutral-800 shadow-2xl shadow-black/50">
             <button
               onClick={() => setActiveTab("effect")}
               className={`px-6 py-2 rounded-lg font-display text-[10px] font-bold tracking-widest transition-all duration-300 cursor-pointer ${
@@ -288,6 +288,16 @@ export default function LandingPage() {
               }`}
             >
               CAUSES
+            </button>
+            {/* Divider */}
+            <div className="w-px h-5 bg-neutral-700 mx-1" />
+            {/* Create new category */}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="p-2 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-all duration-300 cursor-pointer"
+              title={activeTab === "effect" ? "Create Vision Board" : "Create Cause Manifestation"}
+            >
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
