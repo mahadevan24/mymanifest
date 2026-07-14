@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, X, Calendar, Image as ImageIcon } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { ChevronLeft, ChevronRight, X, Calendar, Image as ImageIcon, Maximize2, Minimize2 } from "lucide-react";
 import { VisionImage } from "@/lib/db";
 
 interface LightboxProps {
@@ -20,6 +20,44 @@ export default function Lightbox({
   setCurrentIndex,
 }: LightboxProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((currentIndex + 1) % images.length);
+  }, [currentIndex, images, setCurrentIndex]);
+
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((currentIndex - 1 + images.length) % images.length);
+  }, [currentIndex, images, setCurrentIndex]);
+
+  const toggleFullscreen = useCallback(async () => {
+    if (!containerRef.current) return;
+    try {
+      if (!document.fullscreenElement) {
+        await containerRef.current.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error("Failed to toggle fullscreen:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen && document.fullscreenElement) {
+      document.exitFullscreen().catch((err) => console.error("Error exiting fullscreen:", err));
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -27,6 +65,10 @@ export default function Lightbox({
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") handleNext();
       if (e.key === "ArrowLeft") handlePrev();
+      if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        toggleFullscreen();
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -38,21 +80,13 @@ export default function Lightbox({
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, currentIndex, images]);
+  }, [isOpen, handleNext, handlePrev, toggleFullscreen]);
 
   if (!isOpen || images.length === 0 || currentIndex < 0 || currentIndex >= images.length) {
     return null;
   }
 
   const currentImage = images[currentIndex];
-
-  const handleNext = () => {
-    setCurrentIndex((currentIndex + 1) % images.length);
-  };
-
-  const handlePrev = () => {
-    setCurrentIndex((currentIndex - 1 + images.length) % images.length);
-  };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === containerRef.current) {
@@ -91,6 +125,18 @@ export default function Lightbox({
             {currentIndex + 1} / {images.length}
           </span>
           <button
+            onClick={toggleFullscreen}
+            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+            aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            title={isFullscreen ? "Exit Fullscreen (F)" : "Enter Fullscreen (F)"}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-5 h-5" />
+            ) : (
+              <Maximize2 className="w-5 h-5" />
+            )}
+          </button>
+          <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
             aria-label="Close Lightbox"
@@ -115,7 +161,9 @@ export default function Lightbox({
         <img
           src={currentImage.url}
           alt={currentImage.name || "Vision Board Image"}
-          className="max-w-[calc(100vw-6rem)] max-h-[calc(100vh-3.5rem)] object-contain rounded-md animate-in zoom-in-95 duration-300 select-none pointer-events-none"
+          onDoubleClick={toggleFullscreen}
+          title="Double-click to toggle fullscreen"
+          className="max-w-[calc(100vw-6rem)] max-h-[calc(100vh-3.5rem)] object-contain rounded-md animate-in zoom-in-95 duration-300 select-none cursor-pointer"
         />
 
         {/* Next Arrow */}
