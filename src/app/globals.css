@@ -127,6 +127,21 @@ input:-webkit-autofill:active {
   will-change: transform;
 }
 
+/* Cinematic Focus — breathes zoom in/out on the clicked transform-origin point */
+@keyframes cinematic-focus {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.35);
+  }
+}
+
+.animate-cinematic-focus {
+  animation: cinematic-focus 10s ease-in-out infinite;
+  will-change: transform;
+}
+
 /* Auth gate shake animation */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }

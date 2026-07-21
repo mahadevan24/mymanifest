@@ -20,7 +20,27 @@ export default function Lightbox({
   setCurrentIndex,
 }: LightboxProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Cinematic animation state — origin is where the user clicked
+  const [animationOrigin, setAnimationOrigin] = useState({ x: 50, y: 50 });
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
+
+  // Reset animation when navigating images
+  useEffect(() => {
+    setIsAnimating(false);
+    setAnimationOrigin({ x: 50, y: 50 });
+  }, [currentIndex]);
+
+  // Reset when lightbox closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsAnimating(false);
+      setAnimationOrigin({ x: 50, y: 50 });
+    }
+  }, [isOpen]);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((currentIndex + 1) % images.length);
@@ -80,7 +100,23 @@ export default function Lightbox({
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, handleNext, handlePrev, toggleFullscreen]);
+  }, [isOpen, handleNext, handlePrev, toggleFullscreen, onClose]);
+
+  // Handle image click — set origin and start/restart cinematic animation
+  const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const container = imageContainerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setAnimationOrigin({ x, y });
+    setIsAnimating(true);
+    // Increment key to force React to remount the img, restarting the CSS animation
+    setAnimationKey((prev) => prev + 1);
+  }, []);
 
   if (!isOpen || images.length === 0 || currentIndex < 0 || currentIndex >= images.length) {
     return null;
@@ -157,14 +193,27 @@ export default function Lightbox({
           <ChevronLeft className="w-6 h-6" />
         </button>
 
-        {/* Image – fills all remaining viewport space */}
-        <img
-          src={currentImage.url}
-          alt={currentImage.name || "Vision Board Image"}
-          onDoubleClick={toggleFullscreen}
-          title="Double-click to toggle fullscreen"
-          className="max-w-[calc(100vw-6rem)] max-h-[calc(100vh-3.5rem)] object-contain rounded-md animate-in zoom-in-95 duration-300 select-none cursor-pointer"
-        />
+        {/* Cinematic Image Container — overflow hidden clips the zoom/pan animation */}
+        <div
+          ref={imageContainerRef}
+          onClick={handleImageClick}
+          className="relative overflow-hidden rounded-md max-w-[calc(100vw-6rem)] max-h-[calc(100vh-3.5rem)] flex items-center justify-center cursor-pointer"
+        >
+          <img
+            key={`${currentIndex}-${animationKey}`}
+            src={currentImage.url}
+            alt={currentImage.name || "Vision Board Image"}
+            onDoubleClick={toggleFullscreen}
+            title="Click to focus animation • Double-click for fullscreen"
+            draggable={false}
+            className={`max-w-[calc(100vw-6rem)] max-h-[calc(100vh-3.5rem)] object-contain select-none ${
+              isAnimating ? "animate-cinematic-focus" : ""
+            }`}
+            style={{
+              transformOrigin: `${animationOrigin.x}% ${animationOrigin.y}%`,
+            }}
+          />
+        </div>
 
         {/* Next Arrow */}
         <button
@@ -175,6 +224,15 @@ export default function Lightbox({
           <ChevronRight className="w-6 h-6" />
         </button>
       </div>
+
+      {/* Click hint */}
+      {!isAnimating && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-full bg-neutral-950/80 border border-neutral-800/50 backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <span className="text-[10px] text-neutral-400 font-bold tracking-widest uppercase">
+            CLICK ANYWHERE ON THE IMAGE TO FOCUS
+          </span>
+        </div>
+      )}
     </div>
   );
 }
